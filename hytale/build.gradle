@@ -12,7 +12,7 @@ dependencies {
     implementation 'com.google.guava:guava:19.0'
     implementation 'com.google.code.gson:gson:2.7'
 
-    compileOnly 'com.hypixel.hytale:Server:2026.01.24-6e2d4fc36'
+    compileOnly 'com.hypixel.hytale:Server:2026.02.17-255364b8e'
 }
 
 repositories {
@@ -28,8 +28,10 @@ shadowJar {
         include(dependency('com.google.code.gson:gson:.*'))
     }
 
-    //relocate 'com.google.common', 'me.lucko.luckperms.lib.guava'
-    //relocate 'com.google.gson', 'me.lucko.luckperms.lib.gson'
+    relocate('com.google.common', 'me.lucko.luckperms.lib.guava') {
+        exclude 'com.google.common.flogger.**'
+    }
+    relocate 'com.google.gson', 'me.lucko.luckperms.lib.gson'
 
     relocate 'net.kyori.adventure', 'me.lucko.luckperms.lib.adventure'
     relocate 'net.kyori.event', 'me.lucko.luckperms.lib.eventbus'

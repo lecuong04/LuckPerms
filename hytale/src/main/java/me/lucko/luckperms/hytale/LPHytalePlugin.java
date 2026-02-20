@@ -49,8 +49,7 @@ import me.lucko.luckperms.common.plugin.AbstractLuckPermsPlugin;
 import me.lucko.luckperms.common.plugin.util.AbstractConnectionListener;
 import me.lucko.luckperms.common.sender.Sender;
 import me.lucko.luckperms.hytale.calculator.HytaleCalculatorFactory;
-import me.lucko.luckperms.hytale.calculator.virtualgroups.VirtualGroupsLookupProvider;
-import me.lucko.luckperms.hytale.chat.LuckPermsChatFormatter;
+import me.lucko.luckperms.hytale.calculator.virtualgroups.VirtualGroupsMap;
 import me.lucko.luckperms.hytale.context.HytaleContextManager;
 import me.lucko.luckperms.hytale.context.HytalePlayerCalculator;
 import me.lucko.luckperms.hytale.listeners.HytaleConnectionListener;
@@ -81,8 +80,8 @@ public class LPHytalePlugin extends AbstractLuckPermsPlugin {
     private HytaleContextManager contextManager;
 
     private PlayerVirtualGroupsMap playerVirtualGroupsMap;
-    private VirtualGroupsLookupProvider virtualGroupsLookupProvider;
-    private LuckPermsPermissionProvider luckPermsPermissionProvider;
+    private VirtualGroupsMap virtualGroupsMap;
+    private LuckPermsPermissionProvider permissionProvider;
 
     public LPHytalePlugin(LPHytaleBootstrap bootstrap) {
         this.bootstrap = bootstrap;
@@ -163,8 +162,8 @@ public class LPHytalePlugin extends AbstractLuckPermsPlugin {
 
     @Override
     protected CalculatorFactory provideCalculatorFactory() {
-        this.virtualGroupsLookupProvider = new VirtualGroupsLookupProvider();
-        return new HytaleCalculatorFactory(this, this.virtualGroupsLookupProvider);
+        this.virtualGroupsMap = new VirtualGroupsMap();
+        return new HytaleCalculatorFactory(this);
     }
 
     @Override
@@ -193,20 +192,21 @@ public class LPHytalePlugin extends AbstractLuckPermsPlugin {
         }
 
         // register our provider
-        this.luckPermsPermissionProvider = new LuckPermsPermissionProvider(this, hytaleProvider, this.playerVirtualGroupsMap);
-        permissionsModule.addProvider(this.luckPermsPermissionProvider);
+        this.permissionProvider = new LuckPermsPermissionProvider(this, hytaleProvider, this.playerVirtualGroupsMap);
+        permissionsModule.addProvider(this.permissionProvider);
 
         // remove all other providers
         for (PermissionProvider provider : permissionsModule.getProviders()) {
-            if (provider != this.luckPermsPermissionProvider) {
+            if (provider != this.permissionProvider) {
                 permissionsModule.removeProvider(provider);
             }
         }
 
-        // chat
         if (getConfiguration().get(ConfigKeys.CHAT_FORMATTER_ENABLED)) {
-            LuckPermsChatFormatter chatFormatter = new LuckPermsChatFormatter(this);
-            chatFormatter.register(this.bootstrap.getLoader().getEventRegistry());
+            getLogger().warn("The built-in LuckPerms chat formatter has been removed. Please delete the 'CHAT SETTINGS' section " +
+                    "from your LuckPerms config.yml. We recommend that users migrate to " +
+                    "mini-chat-formatter (https://github.com/lucko/mini-chat-formatter) or a suitable alternative." +
+                    "Please see the LuckPerms wiki for more information: https://luckperms.net/wiki/Hytale#chat-formatting");
         }
 
         // general
@@ -217,11 +217,11 @@ public class LPHytalePlugin extends AbstractLuckPermsPlugin {
     @Override
     protected void removePlatformHooks() {
         PermissionsModule permissionsModule = PermissionsModule.get();
-        HytalePermissionsProvider hytaleProvider = this.luckPermsPermissionProvider.getHytaleProvider();
+        HytalePermissionsProvider hytaleProvider = this.permissionProvider.getHytaleProvider();
         if (hytaleProvider != null) {
             permissionsModule.addProvider(hytaleProvider);
         }
-        permissionsModule.removeProvider(this.luckPermsPermissionProvider);
+        permissionsModule.removeProvider(this.permissionProvider);
     }
 
     @Override
@@ -261,8 +261,8 @@ public class LPHytalePlugin extends AbstractLuckPermsPlugin {
         return this.senderFactory;
     }
 
-    public VirtualGroupsLookupProvider getVirtualGroupsLookupProvider() {
-        return this.virtualGroupsLookupProvider;
+    public VirtualGroupsMap getVirtualGroupsMap() {
+        return this.virtualGroupsMap;
     }
 
     @Override
